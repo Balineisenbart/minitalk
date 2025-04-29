@@ -4,52 +4,55 @@ RESET = \033[0m
 
 CC = cc
 CFLAGS = -Wall -Wextra -Werror -g
-INCLUDEDIR = include
-FT_PRINTF_PATH = include/ft_printf
-LIBF_PATH = include/libft
 
 SRCDIR = .
-SRCS = client.c server.c utils.c ft_strlen.c ft_atoi.c
+SERVER_SRCS = server.c utils.c
+CLIENT_SRCS = client.c  utils.c
 
-OBJS = $(SRCS:.c=.o)
+SERVER_OBJS = $(SERVER_SRCS:%.c=%.o)
+CLIENT_OBJS = $(CLIENT_SRCS:%.c=%.o)
 
-FT_PRINTF = $(FT_PRINTF_PATH)/ft_printf.a
-LIBFT = $(LIBF_PATH)/libft.a
+#targets
+SERVER = server
+CLIENT = client
 
-TARGET = serve client
+LIBFT_DIR = libft
+FT_PRINTF_DIR = ft_printf
 
-all: $(TARGET)
+LIBFT = $(LIBFT_DIR)/libft.a
+FT_PRINTF = $(FT_PRINTF_DIR)/ft_printf.a
 
-server:	server server.c
-	@$(CC) $(CFLAGS) $(OBJS) -o  $(TARGET)
-	@make ft_printf
-	@make libft
 
-client: client client.c
-	@$(CC) $(CFLAGS) $(OBJS) -o  $(TARGET)
-	@make ft_printf
-	@make libft
-
-$(TARGET):	$(OBJS)
-	@$(CC) $(CFLAGS) $(OBJS) -o  $(TARGET)
-	@echo "$(TARGET): $(GREEN)object files were created$(RESET)"
-	@echo "$(TARGET): $(GREEN)$(TARGET) was created$(RESET)"
-
-$(FT_PRINTF):
-	@$(MAKE) -C $(FT_PRINTF_PATH)
+all: $(SERVER) $(CLIENT)
 
 %.o:	%.c
-	$(CC) $(CFLAGS) -I$(INCLUDEDIR) -Ilibs -I$(FT_PRINTF_PATH) -I$(LIBFT_PATH) -c $< -o $@
+	$(CC) $(CFLAGS) -I$(LIBFT_DIR) -I$(FT_PRINTF_DIR) -c $< -o $@
+
+$(SERVER):	$(SERVER_OBJS)
+	@make -C $(LIBFT_DIR)
+	@make -C $(FT_PRINTF_DIR)
+	$(CC) $(CFLAGS) $^ -L$(LIBFT_DIR) -lft -L$(FT_PRINTF_DIR) -lftft_printf -o $(SERVER)
+	@echo "$(GREEN)Built $(SERVER)$(RESET)"
+
+$(CLIENT):	$(CLIENT_OBJS)
+	@make -C $(LIBFT_DIR)
+	@make -C $(FT_PRINTF_DIR)
+	$(CC) $(CFLAGS) $^ -L$(LIBFT_DIR) -lft -L$(FT_PRINTF_DIR) -lftft_printf -o $(CLIENT)
+	@echo "$(GREEN)Built $(SERVER)$(RESET)"
 
 clean:
-	rm -f $(OBJS)
+	@make clean -C $(LIBFT_DIR)
+	@make clean -C $(FT_PRINTF_DIR)
+	rm -f $(SERVER_OBJS) $(CLIENT_OBJS)
 	@echo "$(RED)Cleaned object files$(RESET)"
 
 fclean: clean
-	rm -f $(NAME)
-	@echo "$(RED)Cleaned targets$(RESET)"
+	@make clean -C $(LIBFT_DIR)
+	@make clean -C $(FT_PRINTF_DIR)
+	rm -f $(SERVER_OBJS) $(CLIENT_OBJS)
+	@echo "$(RED)Cleaned binaries$(RESET)"
 
 re:	fclean all
 	@echo "$(GREEN)Rebuilding Library$(RESET)"
 
-.PHONY: clean fclean re all
+.PHONY: clean fclean re all $(LIBFT_DIR) $(FT_PRINTF_DIR)
