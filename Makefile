@@ -16,39 +16,39 @@ CLIENT_OBJS = $(CLIENT_SRCS:%.c=%.o)
 SERVER = server
 CLIENT = client
 
-LIBFT_DIR = include/libft
-FT_PRINTF_DIR = include/ft_printf
+#LIBFT_DIR = include/libft
+#FT_PRINTF_DIR = include/ft_printf
 
-LIBFT = $(LIBFT_DIR)/libft.a
-FT_PRINTF = $(FT_PRINTF_DIR)/ft_printf.a
+#LIBFT = $(LIBFT_DIR)/libft.a
+#FT_PRINTF = $(FT_PRINTF_DIR)/ft_printf.a
 
 
 all: $(SERVER) $(CLIENT)
 
-%.o:	%.c
-	$(CC) $(CFLAGS) -I$(LIBFT_DIR) -I$(FT_PRINTF_DIR) -c $< -o $@
+#%.o:	%.c
+#	$(CC) $(CFLAGS) -I$(LIBFT_DIR) -I$(FT_PRINTF_DIR) -c $< -o $@
 
 $(SERVER):	$(SERVER_OBJS)
-	@make -C $(LIBFT_DIR)
-	@make -C $(FT_PRINTF_DIR)
+#	@make -C $(LIBFT_DIR)
+#	@make -C $(FT_PRINTF_DIR)
 	$(CC) $(CFLAGS) $^ -L$(LIBFT_DIR) -lft -L$(FT_PRINTF_DIR) -lft -o $(SERVER)
 	@echo "$(GREEN)Built $(SERVER)$(RESET)"
 
 $(CLIENT):	$(CLIENT_OBJS)
-	@make -C $(LIBFT_DIR)
-	@make -C $(FT_PRINTF_DIR)
+#	@make -C $(LIBFT_DIR)
+#	@make -C $(FT_PRINTF_DIR)
 	$(CC) $(CFLAGS) $^ -L$(LIBFT_DIR) -lft -L$(FT_PRINTF_DIR) -lft -o $(CLIENT)
 	@echo "$(GREEN)Built $(SERVER)$(RESET)"
 
 clean:
-	@make clean -C $(LIBFT_DIR)
-	@make clean -C $(FT_PRINTF_DIR)
+#	@make clean -C $(LIBFT_DIR)
+#	@make clean -C $(FT_PRINTF_DIR)
 	rm -f $(SERVER_OBJS) $(CLIENT_OBJS)
 	@echo "$(RED)Cleaned object files$(RESET)"
 
 fclean: clean
-	@make clean -C $(LIBFT_DIR)
-	@make clean -C $(FT_PRINTF_DIR)
+#	@make clean -C $(LIBFT_DIR)
+#	@make clean -C $(FT_PRINTF_DIR)
 	rm -f $(SERVER) $(CLIENT)
 	@echo "$(RED)Cleaned binaries$(RESET)"
 

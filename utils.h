@@ -9,7 +9,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <string.h>
 #include <stdio.h> //dont forget to remove!!!!!!!
+
+extern char *g_final;
 
 int	ft_atoi(const char *nptr);
 size_t	ft_strlen(const char *s);
