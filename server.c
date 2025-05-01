@@ -6,12 +6,13 @@ void handler_usr1(int sig, siginfo_t *info, void *ucontext)
 {
     (void) ucontext;
 
-    static pid_t client_pid;
-    
-    if (!client_pid)
-        client_pid = info->si_pid;
+    if (info == NULL || info->si_pid <= 0)
+    {
+        printf("[Invalid Signal ... Ignored]");
+        return;
+    }
 
-    collect_and_print(sig);
+    collect_and_print(sig, info->si_pid);
 }
 
 void handle_sigint(int sig)
@@ -31,20 +32,18 @@ void handle_sigint(int sig)
 void setup_signals(void)
 {
     struct sigaction sa_usr1;
+    struct sigaction sa_int;
+
 
     sa_usr1.sa_sigaction = handler_usr1;
     sigemptyset(&sa_usr1.sa_mask);
     sa_usr1.sa_flags = SA_SIGINFO;
 
-    sigaction(SIGUSR1, &sa_usr1, NULL);
-    sigaction(SIGUSR2, &sa_usr1, NULL);
     if (sigaction(SIGUSR1, &sa_usr1, NULL) == -1 || sigaction(SIGUSR2, &sa_usr1, NULL) == -1)
     {
         printf("sigaction Failed");
         exit(EXIT_FAILURE);
     }
-
-    struct sigaction sa_int;
 
     sa_int.sa_handler = handle_sigint;
     sigemptyset(&sa_int.sa_mask);
@@ -52,7 +51,7 @@ void setup_signals(void)
 
     if (sigaction(SIGINT, &sa_int, NULL) == -1)
     {
-        perror("sigaction SIGINT");
+        printf("sigaction SIGINT");
         exit(EXIT_FAILURE);
     }
 }

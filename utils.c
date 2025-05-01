@@ -11,12 +11,9 @@ char *make_string(char *final, char c)
 
     len = strlen(final);
     
-    temp = malloc (len + 2 * sizeof(char)); //ft_strlen
+    temp = malloc((len + 2) * sizeof(char));
     if (!temp)
-    {
-        free(temp);
         exit(EXIT_FAILURE);
-    }
 
     strcpy(temp, final);
     temp[len] = c;
@@ -27,10 +24,16 @@ char *make_string(char *final, char c)
 
 }
 
-void collect_and_print(int sig)
+void collect_and_print(int sig, pid_t client_pid)
 {
     static unsigned char  c;
+    static pid_t   current_client;
     static int            counter;
+
+    if (!current_client)
+        current_client = client_pid;
+    else if (current_client != client_pid)
+         return;
 
     if (!g_final)
     {
@@ -38,6 +41,8 @@ void collect_and_print(int sig)
         if (!g_final)
             exit(EXIT_FAILURE);
         g_final[0] = '\0';
+        current_client = client_pid;
+
     }
 
     c |= (sig == SIGUSR2) << (7 - counter);
@@ -50,7 +55,9 @@ void collect_and_print(int sig)
             printf("%s\n", g_final);
             free(g_final);
             g_final = NULL;
+            current_client = 0;
         }
+        kill(client_pid, SIGUSR1);
         counter = 0;
         c = 0;
     }
