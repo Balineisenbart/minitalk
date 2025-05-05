@@ -6,7 +6,7 @@
 /*   By: astoiber <astoiber@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/05 18:20:44 by astoiber          #+#    #+#             */
-/*   Updated: 2025/05/06 00:14:49 by astoiber         ###   ########.fr       */
+/*   Updated: 2025/05/06 00:29:42 by astoiber         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,38 +16,36 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-
 volatile sig_atomic_t	g_shake = 2;
-
 
 void	morse_message(pid_t server_pid, unsigned char c)
 {
 	int	i;
 
 	i = 0;
-    if (i == 0)
-        g_shake = 0;
+	if (i == 0)
+		g_shake = 0;
 	else
-        g_shake = 1;
-    while (i < 8)
+		g_shake = 1;
+	while (i < 8)
 	{
 		if (((c >> (7 - i)) & 1) == 0)
 			kill(server_pid, SIGUSR1);
 		else
 			kill(server_pid, SIGUSR2);
-        usleep(200);
-        i++;
+		usleep(200);
+		i++;
 	}
 }
 
 void	signal_handler(int sig)
 {
 	if (sig == SIGUSR2 && g_shake == 0)
-        exit(1);
+		exit(1);
 	else if (sig == SIGUSR2)
 	{
 		write(STDOUT_FILENO, "acknowledged\n", 14);
-        exit(0);
+		exit(0);
 	}
 }
 
@@ -89,27 +87,25 @@ int	invalid_input(char **argv)
 		return (1);
 }
 
-void set_input()
+void	set_input(void)
 {
-    struct sigaction	sa_shake;
+	struct sigaction	sa_shake;
 
-    sa_shake.sa_handler = signal_handler;
+	sa_shake.sa_handler = signal_handler;
 	sa_shake.sa_flags = 0;
 	sigemptyset(&sa_shake.sa_mask);
 	if (sigaction(SIGUSR1, &sa_shake, NULL) == -1 || sigaction(SIGUSR2,
-			&sa_shake, NULL) == -1 )//|| sigaction(SIGINT, &sa_shake, NULL) == -1)
-    {
-        write(STDERR_FILENO, "sigaction Failed\n", 17);
-        exit(EXIT_FAILURE);
-    }
+			&sa_shake, NULL) == -1)
+	{
+		write(STDERR_FILENO, "sigaction Failed\n", 17);
+		exit(EXIT_FAILURE);
+	}
 }
-
-#include <string.h>
 
 int	main(int argc, char **argv)
 {
-	pid_t				server_pid;
-	int					i;
+	pid_t	server_pid;
+	int		i;
 
 	if (!(argc == 3) || invalid_input(argv))
 	{
@@ -117,18 +113,13 @@ int	main(int argc, char **argv)
 			"[NOT EXACTlY 3 arguments!\n do: <binary> <PID> <message>]\n", 58);
 		exit(EXIT_FAILURE);
 	}
-    set_input();
+	set_input();
 	server_pid = ft_atoi(argv[1]);
 	i = 0;
-    /*int len = strlen(argv[2]);
-    while (i <= len)
-        morse_message(server_pid, argv[2][i++]);*/
-    
 	while (argv[2][i] != '\0')
 		morse_message(server_pid, argv[2][i++]);
 	morse_message(server_pid, '\0');
-    while (1)
-        pause();
-    
-    return (0);
+	while (1)
+		pause();
+	return (0);
 }

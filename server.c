@@ -6,10 +6,9 @@
 /*   By: astoiber <astoiber@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/05 18:20:50 by astoiber          #+#    #+#             */
-/*   Updated: 2025/05/05 22:46:49 by astoiber         ###   ########.fr       */
+/*   Updated: 2025/05/06 00:29:17 by astoiber         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
 
 #include <signal.h>
 #include <stdlib.h>
@@ -53,7 +52,8 @@ void	*ft_memset(void *s, int c, size_t n)
 	return (s);
 }
 
-void	handle_full_byte(pid_t *current_client, unsigned char *message, int *c, int *bit_counter)
+void	handle_full_byte(pid_t *current_client, unsigned char *message, int *c,
+		int *bit_counter)
 {
 	if (message[*c] == '\0')
 	{
@@ -62,16 +62,14 @@ void	handle_full_byte(pid_t *current_client, unsigned char *message, int *c, int
 		kill(*current_client, SIGUSR2);
 		ft_memset(message, 0, sizeof(unsigned char) * 2097152);
 		*c = 0;
-        *current_client = 0;
+		*current_client = 0;
 	}
 	else
 	{
-		//kill(*current_client, SIGUSR1);
 		(*c)++;
 	}
 	*bit_counter = 0;
 }
-
 
 void	signal_handler(int sig, siginfo_t *info, void *ucontext)
 {
@@ -80,27 +78,24 @@ void	signal_handler(int sig, siginfo_t *info, void *ucontext)
 	static pid_t			current_client;
 	static unsigned char	message[2097152];
 
-	(void) ucontext;
-    if (!current_client)
-       current_client = info->si_pid;
-    else if (current_client != info->si_pid)
-        kill(info->si_pid, SIGUSR2);
-    message[c] |= (sig == SIGUSR2) << (7 - bit_counter);
-    
-    //kill(current_client, SIGUSR1);
-    if (kill(current_client, SIGUSR1) == -1)
-    {
-        current_client = 0;
-        bit_counter = 0;
-        c = 0;
-        ft_memset(message, 0, sizeof(2097152));
-        return ;
-    }
-    bit_counter++;
+	(void)ucontext;
+	if (!current_client)
+		current_client = info->si_pid;
+	else if (current_client != info->si_pid)
+		kill(info->si_pid, SIGUSR2);
+	message[c] |= (sig == SIGUSR2) << (7 - bit_counter);
+	if (kill(current_client, SIGUSR1) == -1)
+	{
+		current_client = 0;
+		bit_counter = 0;
+		c = 0;
+		ft_memset(message, 0, sizeof(2097152));
+		return ;
+	}
+	bit_counter++;
 	if (bit_counter == 8)
 		handle_full_byte(&current_client, message, &c, &bit_counter);
 }
-
 
 int	main(void)
 {
@@ -115,11 +110,11 @@ int	main(void)
 	sigemptyset(&sa_sig.sa_mask);
 	if (sigaction(SIGUSR1, &sa_sig, NULL) == -1 || sigaction(SIGUSR2, &sa_sig,
 			NULL) == -1)
-    {
+	{
 		write(STDERR_FILENO, "sigaction Failed\n", 17);
 		exit(EXIT_FAILURE);
-    }
-    while (1)
+	}
+	while (1)
 		pause();
 	return (0);
 }
