@@ -6,7 +6,7 @@
 /*   By: astoiber <astoiber@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/05 18:20:44 by astoiber          #+#    #+#             */
-/*   Updated: 2025/05/05 23:21:04 by astoiber         ###   ########.fr       */
+/*   Updated: 2025/05/06 00:14:49 by astoiber         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,25 +42,13 @@ void	morse_message(pid_t server_pid, unsigned char c)
 
 void	signal_handler(int sig)
 {
-    //static pid_t server_pid;
-
-    //(void)ucontext;
-    //(void)info;
-    /*if (sig == SIGUSR1)
-        server_pid = info->si_pid;
-    else */if (sig == SIGUSR2 && g_shake == 0)
+	if (sig == SIGUSR2 && g_shake == 0)
         exit(1);
 	else if (sig == SIGUSR2)
 	{
 		write(STDOUT_FILENO, "acknowledged\n", 14);
         exit(0);
 	}
-    /*else if (sig == SIGINT)
-    {
-        morse_message(server_pid, '\0');
-        write(STDERR_FILENO, "[Client closed with SIGINT]\n", 28);
-        exit(128 + sig);
-    }*/
 }
 
 int	ft_atoi(const char *str)
