@@ -5,6 +5,17 @@
 #include <unistd.h>
 #include <string.h>
 
+typedef struct s_server
+{
+	pid_t client_pid;
+	int bit_index;
+	int char_index;
+	int signal_received;
+	char message[2097152];
+}	t_server;
+
+t_server g_server = {0};
+
 void	putnbr(int n)
 {
 	char	c;
@@ -42,7 +53,7 @@ void	*ft_memset(void *s, int c, size_t n)
 	return (s);
 }
 
-void signal_handler(int sig, siginfo_t *info, void *ucontext)
+/*void signal_handler(int sig, siginfo_t *info, void *ucontext)
 {
     static int  bit_counter;
     static int  c;
@@ -55,9 +66,6 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
         current_client = info->si_pid;
     else if (current_client != info->si_pid)
          return;
-    //add kill 0?
-    //add timeout for silent client to avoid zombie server -- wait 1s or so
-
     message[c] |= (sig == SIGUSR2) << (7 - bit_counter);
     bit_counter++;
     if (bit_counter == 8)
@@ -78,6 +86,42 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
             c++;
         }
     }
+    g_signal_received = 1;
+
+}*/
+
+void signal_handler(int sig, siginfo_t *info, void *ucontext)
+{
+	(void) ucontext;
+
+	if (!g_server.client_pid)
+		g_server.client_pid = info->si_pid;
+	else if (g_server.client_pid != info->si_pid)
+		return;
+
+	g_server.message[g_server.char_index] |= (sig == SIGUSR2) << (7 - g_server.bit_index);
+	g_server.bit_index++;
+
+	if (g_server.bit_index == 8)
+	{
+		if (g_server.message[g_server.char_index] == '\0')
+		{
+			write(STDOUT_FILENO, g_server.message, g_server.char_index);
+			write(STDOUT_FILENO, "\n", 1);
+			kill(info->si_pid, SIGUSR2);
+			g_server.client_pid = 0;
+			g_server.char_index = 0;
+			g_server.bit_index = 0;
+			ft_memset(g_server.message, 0, sizeof(g_server.message));
+		}
+		else
+		{
+			kill(info->si_pid, SIGUSR1);
+			g_server.bit_index = 0;
+			g_server.char_index++;
+		}
+	}
+	g_server.signal_received = 1;
 }
 
 int main(void)
@@ -101,8 +145,26 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    while(1)
-        pause();
+    int tick_counter = 0;
 
+    while (1)
+    {
+        usleep(1000);
+    
+        if (g_server.signal_received)
+        {
+            tick_counter = 0;
+            g_server.signal_received = 0;
+        }
+        else
+            tick_counter++;
+    
+        if (tick_counter > 1000 && g_server.client_pid != 0)
+        {
+            write(1, "Client timed out. Resetting...\n", 32);
+            ft_memset(&g_server, 0, sizeof(t_server));
+            tick_counter = 0;
+        }
+    }
     return (0);
 }
