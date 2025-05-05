@@ -1,98 +1,109 @@
 
 
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 
-#include "utils.h"
+volatile sig_atomic_t g_shake = 1;
 
-volatile sig_atomic_t shake_received = 0;
-
-void handle_shake(int sig)
+void shake_handler(int sig)
 {
-        (void)sig;
-        shake_received = 1;
-        
-}
-
-void setup_shake_handler(void)
-{
-    struct sigaction sa_shake;
-
-    sa_shake.sa_handler = handle_shake;
-    sigemptyset(&sa_shake.sa_mask);
-    sa_shake.sa_flags = SA_RESTART;
-
-    if (sigaction(SIGUSR1, &sa_shake, NULL) == -1)
+    if (sig == SIGUSR1)
+        g_shake = 1;
+    else if (sig == SIGUSR2)
     {
-        printf("sigaction SIGINT");
-        exit(EXIT_FAILURE);
+        g_shake = 1;
+		write(STDOUT_FILENO, "acknowledged\n", 14);
     }
 }
 
-void morse_message(pid_t server_pid, char *message)
+void morse_message(pid_t server_pid, unsigned char c)
 {
-    unsigned char   c;
-    int             i;
+    int i;
 
-    while (*message)
-    {
-        c = (unsigned char)*message++;
-        i = 0;
-
-        // Send each bit of the character
-        while (i < 8)
-        {
-            if (((c >> (7 - i)) & 1) == 0)
-                kill(server_pid, SIGUSR1);
-            else
-                kill(server_pid, SIGUSR2);
-            i++;
-            usleep(50);
-        }
-
-        // Wait for server's ACK
-        shake_received = 0;
-        write(1, "[client] waiting for ACK...\n", 29);
-        while (!shake_received)
-            pause();
-        write(1, "[client] got ACK\n", 18);
-    }
-
-    // Send null terminator ('\0') to mark end of message
-    write(1, "[client] sending null terminator\n", 33);
     i = 0;
+    g_shake = 0;
     while (i < 8)
     {
-        kill(server_pid, SIGUSR1); // 8 bits of 0
+        if (((c >> (7 - i)) & 1) == 0)
+            kill(server_pid, SIGUSR1);
+        else
+            kill(server_pid, SIGUSR2);
         i++;
-        usleep(50);
+        usleep(200);
     }
-
-    shake_received = 0;
-    write(1, "[client] waiting for final ACK...\n", 34);
-    while (!shake_received)
+    if (!g_shake)
         pause();
-    write(1, "[client] exiting after final ACK\n", 34);
 }
 
-pid_t handle_pid(char *pid_argument)
-{
-    pid_t pid;
 
-    pid = (pid_t)atoi(pid_argument);//ft_atoi
-    return pid;
+int	ft_atoi(const char *str)
+{
+	unsigned long	number;
+	int				i;
+	int				sign;
+
+	i = 0;
+	sign = 1;
+	while ((str[i] >= 9 && str[i] <= 13) || str[i] == 32)
+		i++;
+	if (str[i] == '-' || str[i] == '+')
+		if (str[i++] == '-')
+			sign = -1;
+	if (!(str[i] >= '0' && str[i] <= '9'))
+		return (1);
+	number = 0;
+	while (str[i] >= '0' && str[i] <= '9')
+	{
+		number = number * 10 + str[i++] - '0';
+		if (sign == 1 && number >= 9223372036854775807)
+			return (-1);
+		else if (sign == -1 && number >= (unsigned long)9223372036854775807 + 1)
+			return (0);
+	}
+	return ((int)number * sign);
+}
+
+int invalid_input(char **argv)
+{
+    int result1;
+
+    result1 = ft_atoi(argv[1]);
+
+    if (result1)
+        return (0);
+    else
+        return (1);
 }
 
 int main(int argc, char **argv)
 {
+    struct sigaction sa_shake;
     pid_t   server_pid;
+    int i;
 
     if (!(argc == 3) || invalid_input(argv))
     {
-        printf("[NOT EXACTlY 3 arguments!\n do: <binary> <PID> <message>]");
+        write(STDERR_FILENO, "[NOT EXACTlY 3 arguments!\n do: <binary> <PID> <message>]\n", 58);
         exit(EXIT_FAILURE);
     }
-    setup_shake_handler();
+    
+    sa_shake.sa_handler = shake_handler;
+    sa_shake.sa_flags = 0;
+    sigemptyset(&sa_shake.sa_mask);
+    sigaddset(&sa_shake.sa_mask, SIGUSR2);
 
-    server_pid = handle_pid(argv[1]);
-    morse_message(server_pid, argv[2]);
+    if (sigaction(SIGUSR1, &sa_shake, NULL) == -1 || sigaction(SIGUSR2, &sa_shake, NULL) == -1)
+    {
+        write(STDERR_FILENO, "sigaction SIGINT\n", 17);
+        exit(EXIT_FAILURE);
+    }
+
+    server_pid = ft_atoi(argv[1]);
+    i = 0;
+    while (argv[2][i] != '\0')
+        morse_message(server_pid, argv[2][i++]);
+    morse_message(server_pid, '\0');
     return (0);
 }

@@ -6,8 +6,8 @@ CC = cc
 CFLAGS = -Wall -Wextra -Werror -g
 
 SRCDIR = .
-SERVER_SRCS = server.c utils.c
-CLIENT_SRCS = client.c  utils.c
+SERVER_SRCS = server.c
+CLIENT_SRCS = client.c
 
 SERVER_OBJS = $(SERVER_SRCS:%.c=%.o)
 CLIENT_OBJS = $(CLIENT_SRCS:%.c=%.o)
@@ -55,4 +55,4 @@ fclean: clean
 re:	fclean all
 	@echo "$(GREEN)Rebuilding Library$(RESET)"
 
-.PHONY: clean fclean re all $(LIBFT_DIR) $(FT_PRINTF_DIR)
+.PHONY: clean fclean re all
