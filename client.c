@@ -1,42 +1,67 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   client.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: astoiber <astoiber@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/05/05 18:20:44 by astoiber          #+#    #+#             */
+/*   Updated: 2025/05/05 23:21:04 by astoiber         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-
+#define _GNU_SOURCE
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
 
-volatile sig_atomic_t g_shake = 1;
 
-void shake_handler(int sig)
+volatile sig_atomic_t	g_shake = 2;
+
+
+void	morse_message(pid_t server_pid, unsigned char c)
 {
-    if (sig == SIGUSR1)
-        g_shake = 1;
-    else if (sig == SIGUSR2)
-    {
-        g_shake = 1;
-		write(STDOUT_FILENO, "acknowledged\n", 14);
-    }
-}
+	int	i;
 
-void morse_message(pid_t server_pid, unsigned char c)
-{
-    int i;
-
-    i = 0;
-    g_shake = 0;
+	i = 0;
+    if (i == 0)
+        g_shake = 0;
+	else
+        g_shake = 1;
     while (i < 8)
-    {
-        if (((c >> (7 - i)) & 1) == 0)
-            kill(server_pid, SIGUSR1);
-        else
-            kill(server_pid, SIGUSR2);
-        i++;
+	{
+		if (((c >> (7 - i)) & 1) == 0)
+			kill(server_pid, SIGUSR1);
+		else
+			kill(server_pid, SIGUSR2);
         usleep(200);
-    }
-    if (!g_shake)
-        pause();
+        i++;
+	}
 }
 
+void	signal_handler(int sig)
+{
+    //static pid_t server_pid;
+
+    //(void)ucontext;
+    //(void)info;
+    /*if (sig == SIGUSR1)
+        server_pid = info->si_pid;
+    else */if (sig == SIGUSR2 && g_shake == 0)
+        exit(1);
+	else if (sig == SIGUSR2)
+	{
+		write(STDOUT_FILENO, "acknowledged\n", 14);
+        exit(0);
+	}
+    /*else if (sig == SIGINT)
+    {
+        morse_message(server_pid, '\0');
+        write(STDERR_FILENO, "[Client closed with SIGINT]\n", 28);
+        exit(128 + sig);
+    }*/
+}
 
 int	ft_atoi(const char *str)
 {
@@ -65,45 +90,57 @@ int	ft_atoi(const char *str)
 	return ((int)number * sign);
 }
 
-int invalid_input(char **argv)
+int	invalid_input(char **argv)
 {
-    int result1;
+	int	result1;
 
-    result1 = ft_atoi(argv[1]);
-
-    if (result1)
-        return (0);
-    else
-        return (1);
+	result1 = ft_atoi(argv[1]);
+	if (result1)
+		return (0);
+	else
+		return (1);
 }
 
-int main(int argc, char **argv)
+void set_input()
 {
-    struct sigaction sa_shake;
-    pid_t   server_pid;
-    int i;
+    struct sigaction	sa_shake;
 
-    if (!(argc == 3) || invalid_input(argv))
+    sa_shake.sa_handler = signal_handler;
+	sa_shake.sa_flags = 0;
+	sigemptyset(&sa_shake.sa_mask);
+	if (sigaction(SIGUSR1, &sa_shake, NULL) == -1 || sigaction(SIGUSR2,
+			&sa_shake, NULL) == -1 )//|| sigaction(SIGINT, &sa_shake, NULL) == -1)
     {
-        write(STDERR_FILENO, "[NOT EXACTlY 3 arguments!\n do: <binary> <PID> <message>]\n", 58);
+        write(STDERR_FILENO, "sigaction Failed\n", 17);
         exit(EXIT_FAILURE);
     }
+}
+
+#include <string.h>
+
+int	main(int argc, char **argv)
+{
+	pid_t				server_pid;
+	int					i;
+
+	if (!(argc == 3) || invalid_input(argv))
+	{
+		write(STDERR_FILENO,
+			"[NOT EXACTlY 3 arguments!\n do: <binary> <PID> <message>]\n", 58);
+		exit(EXIT_FAILURE);
+	}
+    set_input();
+	server_pid = ft_atoi(argv[1]);
+	i = 0;
+    /*int len = strlen(argv[2]);
+    while (i <= len)
+        morse_message(server_pid, argv[2][i++]);*/
     
-    sa_shake.sa_handler = shake_handler;
-    sa_shake.sa_flags = 0;
-    sigemptyset(&sa_shake.sa_mask);
-    sigaddset(&sa_shake.sa_mask, SIGUSR2);
-
-    if (sigaction(SIGUSR1, &sa_shake, NULL) == -1 || sigaction(SIGUSR2, &sa_shake, NULL) == -1)
-    {
-        write(STDERR_FILENO, "sigaction SIGINT\n", 17);
-        exit(EXIT_FAILURE);
-    }
-
-    server_pid = ft_atoi(argv[1]);
-    i = 0;
-    while (argv[2][i] != '\0')
-        morse_message(server_pid, argv[2][i++]);
-    morse_message(server_pid, '\0');
+	while (argv[2][i] != '\0')
+		morse_message(server_pid, argv[2][i++]);
+	morse_message(server_pid, '\0');
+    while (1)
+        pause();
+    
     return (0);
 }
